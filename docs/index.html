@@ -11,13 +11,14 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
         .sidebar { height: 100vh; position: fixed; background: #fff; padding-top: 2rem; box-shadow: 2px 0 5px rgba(0,0,0,0.05); overflow-y: auto; }
-        .sidebar a { color: #333; display: block; padding: 10px 20px; text-decoration: none; font-weight: 500; }
-        .sidebar a:hover, .sidebar a.active { background: #0d6efd; color: #fff; border-radius: 5px; margin: 0 10px; }
+        .sidebar a { color: #333; display: block; padding: 10px 20px; text-decoration: none; font-weight: 500; font-size: 0.9rem; }
+        .sidebar a:hover, .sidebar a.active { background: #008744; color: #fff; border-radius: 5px; margin: 0 10px; }
         .main-content { margin-left: 250px; padding: 3rem; }
-        pre { background: #2d2d2d; color: #ccc; padding: 15px; border-radius: 8px; overflow-x: auto; }
+        pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;}
         .brand-logo { font-size: 1.5rem; font-weight: 700; color: #008744; text-align: center; margin-bottom: 2rem; }
-        h1, h2, h3 { color: #008744; }
+        h1, h2, h3 { color: #008744; margin-top: 2rem; }
         .alert-info { background-color: #e9f7ef; border-color: #d4edda; color: #155724; }
+        .response-box { background: #2b3a42; color: #88c0d0; }
         @media (max-width: 768px) {
             .sidebar { position: relative; height: auto; padding: 1rem; }
             .main-content { margin-left: 0; padding: 1.5rem; }
@@ -31,14 +32,19 @@
         <!-- Sidebar -->
         <div class="col-md-2 sidebar d-none d-md-block">
             <div class="brand-logo"><i class="fa-brands fa-laravel"></i> Garanti POS</div>
-            <a href="#kurulum" class="active">Kurulum</a>
-            <a href="#yapilandirma">Yapılandırma</a>
-            <a href="#satis-3d-siz">Normal Satış (3D'siz)</a>
-            <a href="#satis-3d">3D Secure Satış</a>
-            <a href="#iptal">İptal İşlemi</a>
-            <a href="#iade">İade İşlemi</a>
-            <a href="#on-provizyon">Ön Provizyon</a>
-            <a href="#puan-sorgulama">Puan Sorgulama</a>
+            <a href="#kurulum" class="active">1. Kurulum</a>
+            <a href="#yapilandirma">2. Yapılandırma</a>
+            <a href="#satis-3d-siz">3. Satış (Non-3D)</a>
+            <a href="#satis-3d">4. Satış (3D Pay)</a>
+            <a href="#satis-3d-oos">5. Satış (3D OOS Pay)</a>
+            <a href="#satis-3d-model">6. Satış (3D Model Otorizasyonu)</a>
+            <a href="#iptal">7. İptal İşlemi</a>
+            <a href="#iade">8. İade İşlemi</a>
+            <a href="#on-provizyon">9. Ön Provizyon</a>
+            <a href="#on-provizyon-kapama">10. Ön Provizyon Kapama</a>
+            <a href="#puan-sorgulama">11. Puan Sorgulama</a>
+            <a href="#puan-kullanimi">12. Puan Kullanımı</a>
+            <a href="#siparis-sorgulama">13. Sipariş Sorgulama</a>
         </div>
 
         <!-- Main Content -->
@@ -52,16 +58,6 @@
                 <h2>1. Kurulum</h2>
                 <p>Paketi Composer aracılığıyla projenize dahil edin:</p>
                 <pre><code>composer require developertugrul/garanti-pos</code></pre>
-                <p>Laravel 5.5+ sürümlerinde Package Auto-Discovery sayesinde servis sağlayıcı otomatik olarak kaydedilir. Daha eski bir sürüm kullanıyorsanız <code>config/app.php</code> dosyanıza ekleyin:</p>
-                <pre><code>'providers' => [
-    // ...
-    Developertugrul\GarantiPos\GarantiPosServiceProvider::class,
-],
-
-'aliases' => [
-    // ...
-    'GarantiPos' => Developertugrul\GarantiPos\Facades\GarantiPos::class,
-],</code></pre>
             </section>
 
             <!-- Yapılandırma -->
@@ -87,77 +83,127 @@ GARANTI_POS_CURRENCY=949 # TL: 949, USD: 840, EUR: 978</code></pre>
                 </div>
                 <pre><code>use Developertugrul\GarantiPos\Facades\GarantiPos;
 
-$orderData = [
+$response = GarantiPos::pay([
     'order_id' => 'Siparis123',
     'amount' => '100', // 1.00 TL için 100 kuruş gönderilir
-    'installment' => '', // Taksit yoksa boş bırakın, varsa '3', '6' vb.
-    'ip_address' => request()->ip(),
-    'email' => 'musteri@example.com',
-    'description' => 'Sipariş Açıklaması'
-];
-
-$cardData = [
+    'installment' => '', 
+], [
     'number' => '5400111122223333',
     'expire_month' => '12',
-    'expire_year' => '25', // Son 2 hane
+    'expire_year' => '25',
     'cvv' => '123'
-];
-
-$response = GarantiPos::pay($orderData, $cardData);
-
-if ($response['Transaction']['Response']['ReasonCode'] == '00') {
-    echo "Ödeme Başarılı!";
-} else {
-    echo "Hata: " . $response['Transaction']['Response']['ErrorMsg'];
+]);</code></pre>
+                <p><strong>Örnek Başarılı Yanıt (Response):</strong></p>
+                <pre class="response-box"><code>{
+    "Transaction": {
+        "Response": {
+            "ReasonCode": "00",
+            "Message": "Approved",
+            "ErrorMsg": "",
+            "SysErrMsg": ""
+        },
+        "RetrefNum": "21300000001",
+        "AuthCode": "123456"
+    }
 }</code></pre>
             </section>
 
             <!-- 3D Secure Satış -->
             <section id="satis-3d" class="mb-5">
                 <h2>4. 3D Secure Satış (3D Pay)</h2>
-                <p>3D Secure işlemlerinde kart sahibini bankanın ortak ödeme veya şifre girme sayfasına yönlendirmeniz gerekir.</p>
-                <pre><code>$orderData = [
-    'order_id' => 'Siparis123',
-    'amount' => '100', // Kuruş cinsinden
-    'installment' => '',
-];
+                <p>Müşteriyi Garanti bankasının 3D doğrulama ekranına yönlendirir. Doğrulama bitince doğrudan tahsilat (payment) yapılır.</p>
+                <pre><code>$formHtml = GarantiPos::build3DForm(
+    ['order_id' => 'Siparis123', 'amount' => '100', 'security_level' => '3D_PAY'],
+    ['number' => '5400...', 'expire_month' => '12', 'expire_year' => '25', 'cvv' => '123'],
+    route('payment.success'),
+    route('payment.error')
+);
+// HTML formu Blade şablonunda {!! $formHtml !!} şeklinde basılır.</code></pre>
+            </section>
 
-$cardData = [
-    'number' => '5400111122223333',
-    'expire_month' => '12',
-    'expire_year' => '25',
-    'cvv' => '123'
-];
+            <!-- 3D OOS Pay -->
+            <section id="satis-3d-oos" class="mb-5">
+                <h2>5. Satış (Ortak Ödeme Sayfası - 3D OOS Pay)</h2>
+                <p>Kart bilgilerinin sizin sitenizde DEĞİL, bankanın güvenli Ortak Ödeme Sayfasında (OOS) girildiği senaryodur.</p>
+                <pre><code>$formHtml = GarantiPos::build3DOOSForm(
+    ['order_id' => 'Siparis123', 'amount' => '100'],
+    route('payment.success'),
+    route('payment.error')
+);</code></pre>
+            </section>
 
-$successUrl = route('payment.success');
-$errorUrl = route('payment.error');
-
-// Otomatik submit olan HTML formu döner. 
-// Bunu doğrudan Blade dosyanızda {!! $formHtml !!} şeklinde basabilirsiniz.
-$formHtml = GarantiPos::build3DForm($orderData, $cardData, $successUrl, $errorUrl, 'sales');
-
-return view('payment.redirect', compact('formHtml'));</code></pre>
+            <!-- 3D Model İkinci Adım -->
+            <section id="satis-3d-model" class="mb-5">
+                <h2>6. Satış (3D Model Otorizasyonu)</h2>
+                <p>Güvenlik seviyesi <code>3D</code> seçildiğinde, müşteri 3D doğrulamasını başarıyla tamamlayıp sitenize dönse bile para çekilmez. İkinci adımda otorizasyon gönderilmelidir.</p>
+                <pre><code>$response = GarantiPos::pay3DModel(
+    ['order_id' => 'Siparis123', 'amount' => '100'],
+    ['number' => '5400...', 'expire_month' => '12', 'expire_year' => '25', 'cvv' => '123'],
+    $request->all() // Bankadan dönen POST verileri (md, cavv, eci vb.)
+);</code></pre>
             </section>
 
             <!-- İptal -->
             <section id="iptal" class="mb-5">
-                <h2>5. İptal İşlemi (Cancel)</h2>
-                <p>İptal işlemi sadece gün sonu alınmamış (aynı gün içindeki) işlemler için yapılabilir.</p>
-                <pre><code>$orderId = 'Siparis123';
-$response = GarantiPos::cancel($orderId);
-
-if ($response['Transaction']['Response']['ReasonCode'] == '00') {
-    echo "İptal Başarılı!";
-}</code></pre>
+                <h2>7. İptal İşlemi (Cancel)</h2>
+                <p>Gün sonu alınmamış işlemlerin iptal edilmesi.</p>
+                <pre><code>$response = GarantiPos::cancel('Siparis123');</code></pre>
+                <p><strong>Örnek Yanıt:</strong></p>
+                <pre class="response-box"><code>{ "Transaction": { "Response": { "ReasonCode": "00", "Message": "Approved" } } }</code></pre>
             </section>
 
             <!-- İade -->
             <section id="iade" class="mb-5">
-                <h2>6. İade İşlemi (Refund)</h2>
-                <p>Gün sonu alınmış önceki günlere ait işlemlerin tamamını veya bir kısmını iade etmek için kullanılır.</p>
-                <pre><code>$orderId = 'Siparis123';
-$refundAmount = '50'; // 0.50 TL iade
-$response = GarantiPos::refund($orderId, $refundAmount);</code></pre>
+                <h2>8. İade İşlemi (Refund)</h2>
+                <p>Gün sonu alınmış eski işlemlerin iadesi.</p>
+                <pre><code>$response = GarantiPos::refund('Siparis123', '100'); // 1.00 TL İade</code></pre>
+            </section>
+
+            <!-- Ön Provizyon -->
+            <section id="on-provizyon" class="mb-5">
+                <h2>9. Ön Provizyon (Pre-Auth)</h2>
+                <p>Kartta belirli bir tutarı bloke (bekletme) işlemi yapar.</p>
+                <pre><code>$response = GarantiPos::preAuth(
+    ['order_id' => 'Siparis123', 'amount' => '100'], 
+    $cardData
+);</code></pre>
+            </section>
+
+            <!-- Ön Provizyon Kapama -->
+            <section id="on-provizyon-kapama" class="mb-5">
+                <h2>10. Ön Provizyon Kapama (Post-Auth)</h2>
+                <p>Bloke edilen tutarın tahsilata (gerçek satışa) dönüştürülmesidir.</p>
+                <pre><code>$response = GarantiPos::postAuth('Siparis123', '100');</code></pre>
+            </section>
+
+            <!-- Puan Sorgulama -->
+            <section id="puan-sorgulama" class="mb-5">
+                <h2>11. Puan Sorgulama (Reward Inquiry)</h2>
+                <p>Kredi kartındaki kazanılmış mevcut Bonus puanlarını listeler.</p>
+                <pre><code>$response = GarantiPos::pointInquiry($cardData);
+// Puan tutarı: $response['Transaction']['RewardList']['Reward']['RewardAmount']</code></pre>
+            </section>
+
+            <!-- Puan Kullanımı -->
+            <section id="puan-kullanimi" class="mb-5">
+                <h2>12. Puan Kullanımı (Reward Usage)</h2>
+                <p>Müşterinin kredi kartındaki puanları ödeme olarak tahsil etme işlemi.</p>
+                <pre><code>$response = GarantiPos::rewardUsage(
+    ['order_id' => 'Siparis123'], 
+    $cardData, 
+    '50' // 0.50 TL Puan Kullanımı
+);</code></pre>
+            </section>
+
+            <!-- Sipariş Sorgulama -->
+            <section id="siparis-sorgulama" class="mb-5">
+                <h2>13. Sipariş Sorgulama (Order Inquiry)</h2>
+                <p>Daha önceden gerçekleşmiş bir işlemin (tahsilatın) bankadaki durumunu ve akıbetini sorgular.</p>
+                <pre><code>$response = GarantiPos::orderInquiry('Siparis123');
+
+if ($response['Transaction']['Response']['ReasonCode'] == '00') {
+    echo "İşlem başarılı olarak kaydedilmiş. Tutarı: " . $response['Transaction']['Amount'];
+}</code></pre>
             </section>
 
         </div>
