@@ -40,6 +40,8 @@ GARANTI_POS_CURRENCY=949 # 949: TL, 840: USD, 978: EUR
 - **Tekrarlı Satış (Recurring):** Düzenli abonelik benzeri tahsilatlar.
 - **TCKN Doğrulama:** İşlem esnasında kimlik doğrulama.
 - **Tüketici Kredisi & Ticari Kart:** `extendedcredit` ve `commercialcardextendedcredit` gibi B2B, kredili, ötelemeli özel ödeme tipleri tam uyumlulukla desteklenir.
+- **DCC, Kampanya, Gün Sonu, Sipariş Listesi Sorguları:** Bankanın sunduğu tüm inquiry tipleri pakette mevcuttur.
+- **Tam Kapsam:** Dökümantasyonda geçen (BIN sorgulama dahil) **her bir** uç nokta desteklenmektedir.
 
 ## Dökümantasyon (Documentation)
 Tüm metodlar, form yapıları, API istek ve yanıt detayları, HTML çıktıları vb. detaylı dökümantasyon için indirdiğiniz dizindeki `docs/index.html` dosyasına göz atın veya [buraya tıklayın](./docs/index.html). Dökümantasyon Bootstrap 5 ile tasarlanmış olup her bir özelliğin entegrasyonu mevcuttur.
