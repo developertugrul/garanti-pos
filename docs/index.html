@@ -51,6 +51,7 @@
             <a href="#tekrarlayan-satis">17. Tekrarlayan Satış (Recurring)</a>
             <a href="#tckn-dogrulama">18. TCKN Doğrulama</a>
             <a href="#kredili-satis">19. Kredili Satışlar</a>
+            <a href="#diger-uclar">20. Diğer Uç Noktalar</a>
         </div>
 
         <!-- Main Content -->
@@ -279,6 +280,17 @@ $response = GarantiPos::payCommercialCardExtendedCredit(['order_id' => '123', 'a
 
 // Tüketici Kredisi Sorgulama
 $response = GarantiPos::extendedCreditInquiry('123');</code></pre>
+            </section>
+
+            <!-- Diğer API Uçları -->
+            <section id="diger-uclar" class="mb-5">
+                <h2>20. Diğer Uç Noktalar (BIN Sorgulama & Abonelik İptali)</h2>
+                <p>Kredi kartının bankasına ait bilgileri çekmek (BIN Sorgusu) veya Tekrarlı Satış (Abonelik) iptali yapmak için:</p>
+                <pre><code>// BIN Numarası ile (Kartın ilk 6 hanesi) sorgulama
+$response = GarantiPos::binInquiry('540011');
+
+// Tekrarlı Satış / Abonelik İptali
+$response = GarantiPos::recurringCancel('Siparis123');</code></pre>
             </section>
 
         </div>

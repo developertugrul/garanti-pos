@@ -940,4 +940,94 @@ class GarantiPosService
 
         return $this->sendRequest($payload);
     }
+
+    /**
+     * BIN Inquiry (BIN Sorgulama)
+     *
+     * @param string $binNumber
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function binInquiry(string $binNumber): array
+    {
+        $securityData = HashGenerator::generateSecurityData(
+            $this->config['prov_password'],
+            $this->config['terminal_id']
+        );
+
+        $hashData = HashGenerator::generateHashData(
+            '',
+            $this->config['terminal_id'],
+            $binNumber,
+            '1',
+            $securityData
+        );
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Card' => [
+                'Number' => $binNumber,
+            ],
+            'Transaction' => [
+                'Type' => 'bininq',
+                'Amount' => '1',
+                'CurrencyCode' => $this->config['currency'],
+            ]
+        ];
+
+        return $this->sendRequest($payload);
+    }
+
+    /**
+     * Recurring Cancel (Tekrarlı Satış İptali)
+     *
+     * @param string $orderId
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function recurringCancel(string $orderId): array
+    {
+        $securityData = HashGenerator::generateSecurityData(
+            $this->config['prov_password'],
+            $this->config['terminal_id']
+        );
+
+        $hashData = HashGenerator::generateHashData(
+            $orderId,
+            $this->config['terminal_id'],
+            '',
+            '1',
+            $securityData
+        );
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Order' => [
+                'OrderID' => $orderId,
+            ],
+            'Transaction' => [
+                'Type' => 'recurringvoid',
+                'Amount' => '1',
+                'CurrencyCode' => $this->config['currency'],
+            ]
+        ];
+
+        return $this->sendRequest($payload);
+    }
 }
