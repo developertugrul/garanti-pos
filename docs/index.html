@@ -50,6 +50,7 @@
             <a href="#islem-detay-sorgulama">16. İşlem Detay Sorgulama</a>
             <a href="#tekrarlayan-satis">17. Tekrarlayan Satış (Recurring)</a>
             <a href="#tckn-dogrulama">18. TCKN Doğrulama</a>
+            <a href="#kredili-satis">19. Kredili Satışlar</a>
         </div>
 
         <!-- Main Content -->
@@ -264,6 +265,20 @@ if ($response['Transaction']['Response']['ReasonCode'] == '00') {
     $cardData,
     '12345678901' // Müşterinin T.C. Kimlik Numarası
 );</code></pre>
+            </section>
+
+            <!-- Kredi İşlemleri -->
+            <section id="kredi-islemleri" class="mb-5">
+                <h2>19. Tüketici Kredisi & Ticari Kart Taksit İşlemleri</h2>
+                <p>Müşterinin kredi faiz oranları ile veya ticari kartlara özel ötelemeli / vadeli işlem yapmasını sağlayan çok spesifik metodlardır. Normal "pay" metodundan farkı, Transaction tipinin `extendedcredit` veya `commercialcardextendedcredit` olmasıdır.</p>
+                <pre><code>// Tüketici Kredisi
+$response = GarantiPos::payExtendedCredit(['order_id' => '123', 'amount' => '1000'], $cardData);
+
+// Ticari Kart Vadeli İşlem
+$response = GarantiPos::payCommercialCardExtendedCredit(['order_id' => '123', 'amount' => '1000'], $cardData);
+
+// Tüketici Kredisi Sorgulama
+$response = GarantiPos::extendedCreditInquiry('123');</code></pre>
             </section>
 
         </div>

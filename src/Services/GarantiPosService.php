@@ -42,7 +42,7 @@ class GarantiPosService
      * @return array
      * @throws GarantiPosException
      */
-    public function pay(array $orderData, array $cardData): array
+    public function pay(array $orderData, array $cardData, string $type = 'sales'): array
     {
         $securityData = HashGenerator::generateSecurityData(
             $this->config['prov_password'],
@@ -82,7 +82,7 @@ class GarantiPosService
                 'Description' => $orderData['description'] ?? '',
             ],
             'Transaction' => [
-                'Type' => 'sales',
+                'Type' => $type,
                 'InstallmentCnt' => $orderData['installment'] ?? '',
                 'Amount' => $orderData['amount'],
                 'CurrencyCode' => $this->config['currency'],
@@ -864,6 +864,77 @@ class GarantiPosService
                 'Verification' => [
                     'Identity' => $tckn
                 ]
+            ]
+        ];
+
+        return $this->sendRequest($payload);
+    }
+
+    /**
+     * Extended Credit Payment (Tüketici Kredisi / Vadeli Taksit)
+     *
+     * @param array $orderData
+     * @param array $cardData
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function payExtendedCredit(array $orderData, array $cardData): array
+    {
+        return $this->pay($orderData, $cardData, 'extendedcredit');
+    }
+
+    /**
+     * Commercial Card Extended Credit (Ticari Kart Vadeli İşlem)
+     *
+     * @param array $orderData
+     * @param array $cardData
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function payCommercialCardExtendedCredit(array $orderData, array $cardData): array
+    {
+        return $this->pay($orderData, $cardData, 'commercialcardextendedcredit');
+    }
+
+    /**
+     * Extended Credit Inquiry (Tüketici Kredisi Sorgulama)
+     *
+     * @param string $orderId
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function extendedCreditInquiry(string $orderId): array
+    {
+        $securityData = HashGenerator::generateSecurityData(
+            $this->config['prov_password'],
+            $this->config['terminal_id']
+        );
+
+        $hashData = HashGenerator::generateHashData(
+            $orderId,
+            $this->config['terminal_id'],
+            '',
+            '1',
+            $securityData
+        );
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Order' => [
+                'OrderID' => $orderId,
+            ],
+            'Transaction' => [
+                'Type' => 'extendedcreditinq',
+                'Amount' => '1',
+                'CurrencyCode' => $this->config['currency'],
             ]
         ];
 
