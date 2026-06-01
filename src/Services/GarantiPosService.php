@@ -1030,4 +1030,184 @@ class GarantiPosService
 
         return $this->sendRequest($payload);
     }
+
+    /**
+     * DCC Inquiry (DCC - Kur Sorgulama)
+     *
+     * @param string $orderId
+     * @param string $cardNumber
+     * @param string $amount
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function dccInquiry(string $orderId, string $cardNumber, string $amount): array
+    {
+        $securityData = HashGenerator::generateSecurityData($this->config['prov_password'], $this->config['terminal_id']);
+        $hashData = HashGenerator::generateHashData($orderId, $this->config['terminal_id'], $cardNumber, $amount, $securityData);
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Card' => ['Number' => $cardNumber],
+            'Order' => ['OrderID' => $orderId],
+            'Transaction' => [
+                'Type' => 'dccinq',
+                'Amount' => $amount,
+                'CurrencyCode' => $this->config['currency'],
+            ]
+        ];
+
+        return $this->sendRequest($payload);
+    }
+
+    /**
+     * Batch Inquiry (Gün Sonu Sorgulama)
+     *
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function batchInquiry(): array
+    {
+        $securityData = HashGenerator::generateSecurityData($this->config['prov_password'], $this->config['terminal_id']);
+        $hashData = HashGenerator::generateHashData('', $this->config['terminal_id'], '', '1', $securityData);
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Transaction' => [
+                'Type' => 'batchinq',
+                'Amount' => '1',
+                'CurrencyCode' => $this->config['currency'],
+            ]
+        ];
+
+        return $this->sendRequest($payload);
+    }
+
+    /**
+     * Campaign Code Inquiry (Kampanya Kodu Sorgulama)
+     *
+     * @param string $campaignCode
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function campaignCodeInquiry(string $campaignCode): array
+    {
+        $securityData = HashGenerator::generateSecurityData($this->config['prov_password'], $this->config['terminal_id']);
+        $hashData = HashGenerator::generateHashData('', $this->config['terminal_id'], '', '1', $securityData);
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Transaction' => [
+                'Type' => 'campaigncodeinq',
+                'Amount' => '1',
+                'CurrencyCode' => $this->config['currency'],
+                'Campaign' => [
+                    'Code' => $campaignCode
+                ]
+            ]
+        ];
+
+        return $this->sendRequest($payload);
+    }
+
+    /**
+     * Order List Inquiry (Sipariş Listesi Sorgulama)
+     *
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function orderListInquiry(): array
+    {
+        $securityData = HashGenerator::generateSecurityData($this->config['prov_password'], $this->config['terminal_id']);
+        $hashData = HashGenerator::generateHashData('', $this->config['terminal_id'], '', '1', $securityData);
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Transaction' => [
+                'Type' => 'orderlistinq',
+                'Amount' => '1',
+                'CurrencyCode' => $this->config['currency'],
+            ]
+        ];
+
+        return $this->sendRequest($payload);
+    }
+
+    /**
+     * Recurring Update (Tekrarlı Satış Güncelleme)
+     *
+     * @param string $orderId
+     * @param array $paymentList Array of ['PaymentNum' => X, 'Amount' => Y]
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function recurringUpdate(string $orderId, array $paymentList): array
+    {
+        $securityData = HashGenerator::generateSecurityData($this->config['prov_password'], $this->config['terminal_id']);
+        $hashData = HashGenerator::generateHashData($orderId, $this->config['terminal_id'], '', '1', $securityData);
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Order' => [
+                'OrderID' => $orderId,
+                'Recurring' => [
+                    'PaymentList' => [] // Processed dynamically
+                ]
+            ],
+            'Transaction' => [
+                'Type' => 'recurringupdate',
+                'Amount' => '1',
+                'CurrencyCode' => $this->config['currency'],
+            ]
+        ];
+        
+        // Add multiple Payment nodes
+        foreach ($paymentList as $idx => $payment) {
+            $payload['Order']['Recurring']['PaymentList']["Payment_Item_{$idx}"] = [
+                'PaymentNum' => $payment['PaymentNum'],
+                'Amount' => $payment['Amount']
+            ];
+        }
+
+        return $this->sendRequest($payload);
+    }
 }

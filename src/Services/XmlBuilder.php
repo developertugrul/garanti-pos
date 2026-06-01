@@ -28,15 +28,18 @@ class XmlBuilder
     private static function arrayToXml(array $data, \SimpleXMLElement $xml): void
     {
         foreach ($data as $key => $value) {
+            // Support for arrays of identical node names like "Payment_Item_1" -> "Payment"
+            $nodeName = preg_replace('/_Item_[0-9]+$/', '', (string)$key);
+
             if (is_array($value)) {
-                if (is_numeric($key)) {
-                    $key = 'item' . $key;
+                if (is_numeric($nodeName)) {
+                    $nodeName = 'item' . $nodeName;
                 }
-                $subnode = $xml->addChild($key);
+                $subnode = $xml->addChild($nodeName);
                 self::arrayToXml($value, $subnode);
             } else {
                 // To avoid issues with special characters
-                $xml->addChild($key, htmlspecialchars((string) $value));
+                $xml->addChild($nodeName, htmlspecialchars((string) $value));
             }
         }
     }
