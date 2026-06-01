@@ -45,6 +45,8 @@
             <a href="#puan-sorgulama">11. Puan Sorgulama</a>
             <a href="#puan-kullanimi">12. Puan Kullanımı</a>
             <a href="#siparis-sorgulama">13. Sipariş Sorgulama</a>
+            <a href="#satis-garantipay">14. Satış (GarantiPay)</a>
+            <a href="#satis-cepbank">15. Satış (CepBank)</a>
         </div>
 
         <!-- Main Content -->
@@ -204,6 +206,27 @@ $response = GarantiPos::pay([
 if ($response['Transaction']['Response']['ReasonCode'] == '00') {
     echo "İşlem başarılı olarak kaydedilmiş. Tutarı: " . $response['Transaction']['Amount'];
 }</code></pre>
+            </section>
+
+            <!-- GarantiPay -->
+            <section id="satis-garantipay" class="mb-5">
+                <h2>14. Satış (GarantiPay)</h2>
+                <p>Müşteriyi doğrudan GarantiPay ile (QR kod / mobil onay) ödeme yapabileceği 3D formuna yönlendirir.</p>
+                <pre><code>$formHtml = GarantiPos::buildGarantiPayForm(
+    ['order_id' => 'Siparis123', 'amount' => '100'],
+    route('payment.success'),
+    route('payment.error')
+);</code></pre>
+            </section>
+
+            <!-- CepBank -->
+            <section id="satis-cepbank" class="mb-5">
+                <h2>15. Satış (CepBank)</h2>
+                <p>CepBank uygulaması üzerinden gönderilmiş bir havalenin onaylanarak tahsil edilmesi.</p>
+                <pre><code>$response = GarantiPos::payCepBank(
+    ['order_id' => 'Siparis123', 'amount' => '100'],
+    ['gsm_number' => '5551234567', 'payment_type' => 'K'] // K: Kredi Kartı, D: Debit, V: Vadesiz
+);</code></pre>
             </section>
 
         </div>

@@ -581,4 +581,125 @@ class GarantiPosService
 
         return $this->sendRequest($payload);
     }
+
+    /**
+     * CepBank Payment
+     *
+     * @param array $orderData
+     * @param array $cepBankData ['gsm_number' => '...', 'payment_type' => 'K/D/V']
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function payCepBank(array $orderData, array $cepBankData): array
+    {
+        $securityData = HashGenerator::generateSecurityData(
+            $this->config['prov_password'],
+            $this->config['terminal_id']
+        );
+
+        $hashData = HashGenerator::generateHashData(
+            $orderData['order_id'],
+            $this->config['terminal_id'],
+            '',
+            $orderData['amount'],
+            $securityData
+        );
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Customer' => [
+                'IPAddress' => $orderData['ip_address'] ?? request()->ip(),
+                'EmailAddress' => $orderData['email'] ?? '',
+            ],
+            'Card' => [
+                'Number' => '',
+                'ExpireDate' => '',
+                'CVV2' => '',
+            ],
+            'Order' => [
+                'OrderID' => $orderData['order_id'],
+            ],
+            'Transaction' => [
+                'Type' => 'cepbank',
+                'Amount' => $orderData['amount'],
+                'CurrencyCode' => $this->config['currency'],
+                'CepBank' => [
+                    'GSMNumber' => $cepBankData['gsm_number'],
+                    'PaymentType' => $cepBankData['payment_type'],
+                ]
+            ]
+        ];
+
+        return $this->sendRequest($payload);
+    }
+
+    /**
+     * Generate GarantiPay Form HTML
+     *
+     * @param array $orderData
+     * @param string $successUrl
+     * @param string $errorUrl
+     * @return string
+     */
+    public function buildGarantiPayForm(array $orderData, string $successUrl, string $errorUrl): string
+    {
+        $securityData = HashGenerator::generateSecurityData(
+            $this->config['prov_password'],
+            $this->config['terminal_id']
+        );
+
+        $hashData = HashGenerator::generate3DHash(
+            $this->config['terminal_id'],
+            $orderData['order_id'],
+            $orderData['amount'],
+            $successUrl,
+            $errorUrl,
+            'sales',
+            $orderData['installment'] ?? '',
+            $this->config['store_key'],
+            $securityData
+        );
+
+        $endpoint = $this->config['mode'] === 'PROD'
+            ? 'https://sanalposprov.garanti.com.tr/servlet/gt3dengine'
+            : 'https://sanalposprovtest.garanti.com.tr/servlet/gt3dengine';
+
+        $formInputs = [
+            'mode' => $this->config['mode'],
+            'apiversion' => 'v0.01',
+            'terminalprovuserid' => $this->config['prov_user_id'],
+            'terminaluserid' => $this->config['prov_user_id'],
+            'terminalmerchantid' => $this->config['merchant_id'],
+            'txntype' => 'sales',
+            'txnamount' => $orderData['amount'],
+            'txncurrencycode' => $this->config['currency'],
+            'txninstallmentcount' => $orderData['installment'] ?? '',
+            'orderid' => $orderData['order_id'],
+            'terminalid' => $this->config['terminal_id'],
+            'successurl' => $successUrl,
+            'errorurl' => $errorUrl,
+            'customeripaddress' => $orderData['ip_address'] ?? request()->ip(),
+            'customeremailaddress' => $orderData['email'] ?? '',
+            'secure3dsecuritylevel' => '3D_PAY',
+            'secure3dhash' => $hashData,
+            'garantipay' => 'Y',
+        ];
+
+        $html = '<form id="garanti-pay-form" action="'.$endpoint.'" method="post">';
+        foreach ($formInputs as $key => $value) {
+            $html .= '<input type="hidden" name="'.$key.'" value="'.htmlspecialchars($value).'">';
+        }
+        $html .= '</form>';
+        $html .= '<script>document.getElementById("garanti-pay-form").submit();</script>';
+
+        return $html;
+    }
 }
