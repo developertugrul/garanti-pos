@@ -454,6 +454,51 @@ class GarantiPosService
     }
 
     /**
+     * Order History Inquiry (İşlem Detay Sorgulama)
+     *
+     * @param string $orderId
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function orderHistoryInquiry(string $orderId): array
+    {
+        $securityData = HashGenerator::generateSecurityData(
+            $this->config['prov_password'],
+            $this->config['terminal_id']
+        );
+
+        $hashData = HashGenerator::generateHashData(
+            $orderId,
+            $this->config['terminal_id'],
+            '',
+            '1', // Dummy amount
+            $securityData
+        );
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Order' => [
+                'OrderID' => $orderId,
+            ],
+            'Transaction' => [
+                'Type' => 'orderhistoryinq',
+                'Amount' => '1',
+                'CurrencyCode' => $this->config['currency'],
+            ]
+        ];
+
+        return $this->sendRequest($payload);
+    }
+
+    /**
      * Generate 3D Secure Ortak Ödeme Sayfası (OOS) Form HTML
      *
      * @param array $orderData
@@ -701,5 +746,127 @@ class GarantiPosService
         $html .= '<script>document.getElementById("garanti-pay-form").submit();</script>';
 
         return $html;
+    }
+
+    /**
+     * Recurring Payment Setup (Tekrarlı Satış Başlatma)
+     *
+     * @param array $orderData
+     * @param array $cardData
+     * @param array $recurringData
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function payRecurring(array $orderData, array $cardData, array $recurringData): array
+    {
+        $securityData = HashGenerator::generateSecurityData(
+            $this->config['prov_password'],
+            $this->config['terminal_id']
+        );
+
+        $hashData = HashGenerator::generateHashData(
+            $orderData['order_id'],
+            $this->config['terminal_id'],
+            $cardData['number'],
+            $orderData['amount'],
+            $securityData
+        );
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Customer' => [
+                'IPAddress' => $orderData['ip_address'] ?? request()->ip(),
+                'EmailAddress' => $orderData['email'] ?? '',
+            ],
+            'Card' => [
+                'Number' => $cardData['number'],
+                'ExpireDate' => $cardData['expire_month'] . $cardData['expire_year'],
+                'CVV2' => $cardData['cvv'],
+            ],
+            'Order' => [
+                'OrderID' => $orderData['order_id'],
+                'Recurring' => [
+                    'Type' => 'R',
+                    'TotalPaymentNum' => $recurringData['total_payment_num'],
+                    'FrequencyType' => $recurringData['frequency_type'], // M, W, D vs
+                    'FrequencyInterval' => $recurringData['frequency_interval'],
+                    'StartDate' => $recurringData['start_date'], // YYYYMMDD
+                ]
+            ],
+            'Transaction' => [
+                'Type' => 'sales',
+                'Amount' => $orderData['amount'],
+                'CurrencyCode' => $this->config['currency'],
+            ]
+        ];
+
+        return $this->sendRequest($payload);
+    }
+
+    /**
+     * Identify Inquiry (TCKN Doğrulama)
+     *
+     * @param array $orderData
+     * @param array $cardData
+     * @param string $tckn
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function identifyInquiry(array $orderData, array $cardData, string $tckn): array
+    {
+        $securityData = HashGenerator::generateSecurityData(
+            $this->config['prov_password'],
+            $this->config['terminal_id']
+        );
+
+        $hashData = HashGenerator::generateHashData(
+            $orderData['order_id'],
+            $this->config['terminal_id'],
+            $cardData['number'],
+            $orderData['amount'],
+            $securityData
+        );
+
+        $payload = [
+            'Mode' => $this->config['mode'],
+            'Version' => 'v0.01',
+            'Terminal' => [
+                'ProvUserID' => $this->config['prov_user_id'],
+                'HashData' => $hashData,
+                'UserID' => $this->config['prov_user_id'],
+                'ID' => $this->config['terminal_id'],
+                'MerchantID' => $this->config['merchant_id'],
+            ],
+            'Customer' => [
+                'IPAddress' => $orderData['ip_address'] ?? request()->ip(),
+                'EmailAddress' => $orderData['email'] ?? '',
+            ],
+            'Card' => [
+                'Number' => $cardData['number'],
+                'ExpireDate' => $cardData['expire_month'] . $cardData['expire_year'],
+                'CVV2' => $cardData['cvv'],
+            ],
+            'Order' => [
+                'OrderID' => $orderData['order_id'],
+            ],
+            'Transaction' => [
+                'Type' => 'identifyinq',
+                'Amount' => $orderData['amount'],
+                'CurrencyCode' => $this->config['currency'],
+                'Verification' => [
+                    'Identity' => $tckn
+                ]
+            ]
+        ];
+
+        return $this->sendRequest($payload);
     }
 }

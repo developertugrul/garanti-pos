@@ -1,14 +1,6 @@
 # Garanti POS Laravel Package
 
-A flawless, easy-to-use, and highly professional Laravel integration for Garanti BBVA Virtual POS API.
-
-## Özellikler (Features)
-- Non-3D Satış
-- 3D Secure (3D Pay & 3D Model) Satış
-- İptal (Cancel)
-- İade (Refund)
-- Ön Provizyon ve Kapama (PreAuth & PostAuth)
-- Puan Sorgulama (Point Inquiry)
+A flawless, easy-to-use, and highly professional Laravel integration for Garanti BBVA Virtual POS API. Bu paket Garanti Bankası'nın sağladığı tüm Sanal POS (GVP) metodlarını eksiksiz olarak Laravel projelerinizde kullanmanızı sağlar.
 
 ## Kurulum (Installation)
 
@@ -24,35 +16,48 @@ php artisan vendor:publish --provider="Developertugrul\GarantiPos\GarantiPosServ
 
 3. `.env` dosyanıza Garanti POS bilgilerinizi ekleyin:
 ```env
-GARANTI_POS_MODE=TEST # Veya PROD
+GARANTI_POS_MODE=TEST # Canlı için PROD
 GARANTI_POS_TERMINAL_ID=12345678
 GARANTI_POS_PROV_USER_ID=PROVAUT
 GARANTI_POS_PROV_PASSWORD=Sifreniz
 GARANTI_POS_MERCHANT_ID=1234567
 GARANTI_POS_STORE_KEY=3DSecureAnahtari
+GARANTI_POS_CURRENCY=949 # 949: TL, 840: USD, 978: EUR
 ```
 
-## Dökümantasyon (Documentation)
-Tüm metodlar ve detaylı kullanım örnekleri için lütfen indirdiğiniz klasördeki `/docs/index.html` dosyasına göz atın veya [tıklayın](./docs/index.html).
+## Özellikler (Features)
+- **Normal Satış (Non-3D):** 3D secure kullanmadan ödeme alma (Banka izni gerektirir).
+- **3D Pay:** 3D doğrulamasının ardından anında ödemenin çekildiği yöntem.
+- **3D OOS Pay (Ortak Ödeme Sayfası):** Müşterinin kart bilgilerini bankanın kendi güvenli sayfasında girdiği sistem.
+- **3D Model (2 Adımlı):** 3D doğrulamasının alındığı ve ardından arka planda otorizasyon yapılarak tahsilatın tamamlandığı sistem.
+- **İptal (Cancel):** Gün sonu alınmamış işlemlerin iptali.
+- **İade (Refund):** Gün sonu alınmış işlemlerin iadesi (Kısmi iade desteklenir).
+- **Ön Provizyon & Kapama (PreAuth / PostAuth):** Karttan provizyon (bloke) alma ve daha sonra bu tutarı tahsil etme.
+- **Puan İşlemleri:** Kredi kartındaki puanların sorgulanması ve tahsilat için kullanılması.
+- **Sipariş & Geçmiş Sorgulama:** İşlemlerin anlık banka durumlarının sorgulanması.
+- **GarantiPay:** Kullanıcıların mobil uygulama üzerinden ödeme yapabilmesi için form oluşturulması.
+- **CepBank:** CepBank uygulaması ile yapılan ödemelerin onaylanıp tahsil edilmesi.
+- **Tekrarlı Satış (Recurring):** Düzenli abonelik benzeri tahsilatlar.
+- **TCKN Doğrulama:** İşlem esnasında kimlik doğrulama.
 
-## Kullanım Örneği
+## Dökümantasyon (Documentation)
+Tüm metodlar, form yapıları, API istek ve yanıt detayları, HTML çıktıları vb. detaylı dökümantasyon için indirdiğiniz dizindeki `docs/index.html` dosyasına göz atın veya [buraya tıklayın](./docs/index.html). Dökümantasyon Bootstrap 5 ile tasarlanmış olup her bir özelliğin entegrasyonu mevcuttur.
+
+## Kullanım Örneği (3D Secure)
 
 ```php
 use Developertugrul\GarantiPos\Facades\GarantiPos;
 
-// 3D'siz Satış İşlemi
-$response = GarantiPos::pay([
-    'order_id' => 'Siparis123',
-    'amount' => '100', // 1.00 TL
-], [
-    'number' => '5400111122223333',
-    'expire_month' => '12',
-    'expire_year' => '25',
-    'cvv' => '123'
-]);
+// Form oluşturulur ve blade'e gönderilir
+$formHtml = GarantiPos::build3DForm(
+    ['order_id' => 'Siparis123', 'amount' => '1000', 'installment' => ''], // 10.00 TL
+    ['number' => '5400...', 'expire_month' => '12', 'expire_year' => '25', 'cvv' => '123'],
+    route('payment.success'),
+    route('payment.error')
+);
 
-// 3D Secure Formu Oluşturma
-$formHtml = GarantiPos::build3DForm($orderData, $cardData, 'https://site.com/basarili', 'https://site.com/hata');
+// Blade dosyanızda
+{!! $formHtml !!}
 ```
 
 ## Lisans

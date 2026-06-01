@@ -47,6 +47,9 @@
             <a href="#siparis-sorgulama">13. Sipariş Sorgulama</a>
             <a href="#satis-garantipay">14. Satış (GarantiPay)</a>
             <a href="#satis-cepbank">15. Satış (CepBank)</a>
+            <a href="#islem-detay-sorgulama">16. İşlem Detay Sorgulama</a>
+            <a href="#tekrarlayan-satis">17. Tekrarlayan Satış (Recurring)</a>
+            <a href="#tckn-dogrulama">18. TCKN Doğrulama</a>
         </div>
 
         <!-- Main Content -->
@@ -226,6 +229,40 @@ if ($response['Transaction']['Response']['ReasonCode'] == '00') {
                 <pre><code>$response = GarantiPos::payCepBank(
     ['order_id' => 'Siparis123', 'amount' => '100'],
     ['gsm_number' => '5551234567', 'payment_type' => 'K'] // K: Kredi Kartı, D: Debit, V: Vadesiz
+);</code></pre>
+            </section>
+
+            <!-- İşlem Detay Sorgulama -->
+            <section id="islem-detay-sorgulama" class="mb-5">
+                <h2>16. İşlem Detay Sorgulama (Order History Inquiry)</h2>
+                <p>Belirtilen siparişe ait iptal, iade vb. tüm işlem hareketlerini (history) listeler.</p>
+                <pre><code>$response = GarantiPos::orderHistoryInquiry('Siparis123');</code></pre>
+            </section>
+
+            <!-- Tekrarlayan Satış -->
+            <section id="tekrarlayan-satis" class="mb-5">
+                <h2>17. Tekrarlayan Satış (Recurring Payment)</h2>
+                <p>Abonelik sistemlerinde kullanılabilecek, bankanın karttan belirli periyotlarla otomatik para çekmesini sağlayan komut.</p>
+                <pre><code>$response = GarantiPos::payRecurring(
+    ['order_id' => 'Siparis123', 'amount' => '1000'],
+    $cardData,
+    [
+        'total_payment_num' => '5', // Toplam çekim sayısı
+        'frequency_type' => 'M', // M: Ay, W: Hafta, D: Gün
+        'frequency_interval' => '1', // 1 ayda bir
+        'start_date' => '20261201' // Başlangıç YYYYMMDD
+    ]
+);</code></pre>
+            </section>
+
+            <!-- TCKN Doğrulama -->
+            <section id="tckn-dogrulama" class="mb-5">
+                <h2>18. TCKN Doğrulama (Identify Inquiry)</h2>
+                <p>Kişinin TCKN bilgisiyle banka altyapısında kimlik doğrulaması yapmak için kullanılır.</p>
+                <pre><code>$response = GarantiPos::identifyInquiry(
+    ['order_id' => 'Siparis123', 'amount' => '100'],
+    $cardData,
+    '12345678901' // Müşterinin T.C. Kimlik Numarası
 );</code></pre>
             </section>
 
