@@ -62,4 +62,38 @@ class HashGenerator
         $hashString = $terminalId . $orderId . $amount . $successUrl . $errorUrl . $type . $installmentCnt . $storeKey . $securityData;
         return strtoupper(sha1($hashString));
     }
+
+    /**
+     * Validate 3D Hash from Garanti 3D Callback
+     *
+     * @param array $postData The $_POST array from Garanti Callback
+     * @param string $storeKey
+     * @return bool
+     */
+    public static function validate3DHash(array $postData, string $storeKey): bool
+    {
+        $responseHashparams = $postData['hashparams'] ?? '';
+        $responseHash = $postData['hash'] ?? '';
+
+        if (empty($responseHashparams) || empty($responseHash)) {
+            return false;
+        }
+
+        $digestData = "";
+        $paramList = explode(":", $responseHashparams);
+
+        foreach ($paramList as $param) {
+            $paramName = strtolower($param);
+            // In Garanti payload, keys are often lowercase but we check case insensitively if needed.
+            // Using array_change_key_case makes it safer.
+            $postDataLower = array_change_key_case($postData, CASE_LOWER);
+            $value = $postDataLower[$paramName] ?? '';
+            $digestData .= $value;
+        }
+
+        $digestData .= $storeKey;
+        $hashCalculated = base64_encode(pack('H*', sha1($digestData)));
+
+        return $responseHash === $hashCalculated;
+    }
 }

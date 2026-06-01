@@ -20,8 +20,12 @@
         .alert-info { background-color: #e9f7ef; border-color: #d4edda; color: #155724; }
         .response-box { background: #2b3a42; color: #88c0d0; }
         @media (max-width: 768px) {
-            .sidebar { position: relative; width: 100%; height: auto; padding: 1rem; }
+            .sidebar { position: static; width: 100%; height: auto; padding: 1rem; }
             .main-content { margin-left: 0; padding: 1.5rem; width: 100%; }
+        }
+        @media (min-width: 769px) {
+            .container-fluid > .row { display: flex; flex-wrap: nowrap; }
+            .main-content { margin-left: 260px; padding: 3rem; flex: 1; max-width: calc(100% - 260px); }
         }
     </style>
 </head>
@@ -143,9 +147,16 @@ $response = GarantiPos::pay([
             <section id="satis-3d-model" class="mb-5">
                 <h2>6. Satış (3D Model Otorizasyonu)</h2>
                 <p>Güvenlik seviyesi <code>3D</code> seçildiğinde, müşteri 3D doğrulamasını başarıyla tamamlayıp sitenize dönse bile para çekilmez. İkinci adımda otorizasyon gönderilmelidir.</p>
+                <div class="alert alert-info">
+                    <strong>Not:</strong> Güvenlik sebebiyle POST edilen veriler içerisindeki <code>hash</code> doğrulanır ve ikinci adımda kart numaraları bankaya gönderilmez. Doğrulama kütüphane içerisinde otomatik yapılmaktadır. Kendi kontrolünüzü de ekleyebilirsiniz:
+                    <pre><code>use Developertugrul\GarantiPos\Services\HashGenerator;
+
+if (!HashGenerator::validate3DHash($request->all(), config('garanti-pos.store_key'))) {
+    die("Hash Hatası!");
+}</code></pre>
+                </div>
                 <pre><code>$response = GarantiPos::pay3DModel(
     ['order_id' => 'Siparis123', 'amount' => '100'],
-    ['number' => '5400...', 'expire_month' => '12', 'expire_year' => '25', 'cvv' => '123'],
     $request->all() // Bankadan dönen POST verileri (md, cavv, eci vb.)
 );</code></pre>
             </section>
@@ -161,9 +172,11 @@ $response = GarantiPos::pay([
 
             <!-- İade -->
             <section id="iade" class="mb-5">
-                <h2>8. İade İşlemi (Refund)</h2>
+                <h2>8. İade İşlemi (Refund) & İade İptali</h2>
                 <p>Gün sonu alınmış eski işlemlerin iadesi.</p>
                 <pre><code>$response = GarantiPos::refund('Siparis123', '100'); // 1.00 TL İade</code></pre>
+                <p>Yapılan bir iade işlemini iptal etmek isterseniz:</p>
+                <pre><code>$response = GarantiPos::refundVoid('Siparis123', 'IadeRetrefNum');</code></pre>
             </section>
 
             <!-- Ön Provizyon -->
@@ -178,9 +191,11 @@ $response = GarantiPos::pay([
 
             <!-- Ön Provizyon Kapama -->
             <section id="on-provizyon-kapama" class="mb-5">
-                <h2>10. Ön Provizyon Kapama (Post-Auth)</h2>
+                <h2>10. Ön Provizyon Kapama (Post-Auth) & İptali</h2>
                 <p>Bloke edilen tutarın tahsilata (gerçek satışa) dönüştürülmesidir.</p>
                 <pre><code>$response = GarantiPos::postAuth('Siparis123', '100');</code></pre>
+                <p>Kapatılan ön provizyonu iptal etmek için:</p>
+                <pre><code>$response = GarantiPos::postAuthVoid('Siparis123', 'OrjinalRetrefNum');</code></pre>
             </section>
 
             <!-- Puan Sorgulama -->
@@ -231,6 +246,23 @@ if ($response['Transaction']['Response']['ReasonCode'] == '00') {
                 <pre><code>$response = GarantiPos::payCepBank(
     ['order_id' => 'Siparis123', 'amount' => '100'],
     ['gsm_number' => '5551234567', 'payment_type' => 'K'] // K: Kredi Kartı, D: Debit, V: Vadesiz
+);</code></pre>
+            </section>
+
+            <!-- SMS / DCC -->
+            <section id="satis-sms-dcc" class="mb-5">
+                <h2>15.1 SMS & DCC Satış Onayları</h2>
+                <p>SMS veya DCC onayı için <code>paySms</code> ve <code>payDcc</code> fonksiyonlarını kullanabilirsiniz.</p>
+                <pre><code>// SMS Ödemesi
+$response = GarantiPos::paySms(
+    ['order_id' => 'Siparis123', 'amount' => '100'],
+    $cardData
+);
+
+// DCC Ödemesi
+$response = GarantiPos::payDcc(
+    ['order_id' => 'Siparis123', 'amount' => '100'],
+    $cardData
 );</code></pre>
             </section>
 

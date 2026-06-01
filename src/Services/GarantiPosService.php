@@ -91,6 +91,19 @@ class GarantiPosService
             ]
         ];
 
+        if (isset($orderData['subtype'])) {
+            $payload['Transaction']['SubType'] = $orderData['subtype'];
+        }
+        if (isset($orderData['address_list'])) {
+            $payload['Order']['AddressList'] = $orderData['address_list'];
+        }
+        if (isset($orderData['item_list'])) {
+            $payload['Order']['ItemList'] = $orderData['item_list'];
+        }
+        if (isset($orderData['comment_list'])) {
+            $payload['Order']['CommentList'] = $orderData['comment_list'];
+        }
+
         return $this->sendRequest($payload);
     }
 
@@ -132,7 +145,7 @@ class GarantiPosService
     public function preAuth(array $orderData, array $cardData): array
     {
         $orderData['type'] = 'preauth';
-        return $this->pay($orderData, $cardData);
+        return $this->pay($orderData, $cardData, 'preauth');
     }
 
     /**
@@ -146,6 +159,32 @@ class GarantiPosService
     public function postAuth(string $orderId, string $amount): array
     {
         return $this->processTransaction('postauth', $orderId, $amount);
+    }
+
+    /**
+     * Post-Auth Void (Ön Provizyon Kapama İptali)
+     *
+     * @param string $orderId
+     * @param string $originalRetrefNum
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function postAuthVoid(string $orderId, string $originalRetrefNum = ''): array
+    {
+        return $this->cancel($orderId, $originalRetrefNum);
+    }
+
+    /**
+     * Refund Void (İade İptali)
+     *
+     * @param string $orderId
+     * @param string $originalRetrefNum
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function refundVoid(string $orderId, string $originalRetrefNum = ''): array
+    {
+        return $this->cancel($orderId, $originalRetrefNum);
     }
 
     /**
@@ -249,6 +288,34 @@ class GarantiPosService
     }
 
     /**
+     * SMS Validation Payment (SubType: sms)
+     *
+     * @param array $orderData
+     * @param array $cardData
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function paySms(array $orderData, array $cardData): array
+    {
+        $orderData['subtype'] = 'sms';
+        return $this->pay($orderData, $cardData);
+    }
+
+    /**
+     * DCC Payment (Dynamic Currency Conversion)
+     *
+     * @param array $orderData
+     * @param array $cardData
+     * @return array
+     * @throws GarantiPosException
+     */
+    public function payDcc(array $orderData, array $cardData): array
+    {
+        $orderData['subtype'] = 'dcc';
+        return $this->pay($orderData, $cardData);
+    }
+
+    /**
      * Send XML request to Garanti API
      *
      * @param array $payload
@@ -259,17 +326,34 @@ class GarantiPosService
     {
         $xmlData = XmlBuilder::build($payload);
 
-        $response = Http::asForm()
-            ->withoutVerifying() // Because Garanti endpoints sometimes have SSL issues locally
-            ->post($this->endpoint, [
-                'data' => $xmlData
-            ]);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $this->endpoint);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, 'data=' . $xmlData);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
-        if ($response->failed()) {
-            throw new GarantiPosException('Garanti POS API connection failed.');
+        $response = curl_exec($ch);
+
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            throw new GarantiPosException("CURL Error: $error");
+        }
+        curl_close($ch);
+
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($response);
+        
+        if ($xml === false) {
+            $errors = libxml_get_errors();
+            $errorMsg = $errors[0]->message ?? 'Unknown XML parsing error';
+            libxml_clear_errors();
+            throw new GarantiPosException("Invalid XML Response from Garanti: " . $errorMsg . " | Raw: " . $response);
         }
 
-        return $this->parseXmlResponse($response->body());
+        return json_decode(json_encode($xml), true);
     }
 
     /**
@@ -281,8 +365,7 @@ class GarantiPosService
     private function parseXmlResponse(string $xmlString): array
     {
         $xml = simplexml_load_string($xmlString, 'SimpleXMLElement', LIBXML_NOCDATA);
-        $json = json_encode($xml);
-        return json_decode($json, true);
+        return json_decode(json_encode($xml), true);
     }
 
     /**
@@ -533,8 +616,8 @@ class GarantiPosService
         $formInputs = [
             'mode' => $this->config['mode'],
             'apiversion' => 'v0.01',
-            'terminalprovuserid' => $this->config['prov_user_id'],
-            'terminaluserid' => $this->config['prov_user_id'],
+            'terminalprovuserid' => $this->config['prov_oos_user_id'] ?? 'PROVOOS',
+            'terminaluserid' => $this->config['oos_user_id'] ?? 'oosuser',
             'terminalmerchantid' => $this->config['merchant_id'],
             'txntype' => $type,
             'txnamount' => $orderData['amount'],
@@ -561,6 +644,58 @@ class GarantiPosService
     }
 
     /**
+     * Generate Ortak Ödeme Sayfası (OOS_PAY - Non 3D) Form HTML
+     *
+     * @param array $orderData
+     * @param string $successUrl
+     * @param string $errorUrl
+     * @param string $type
+     * @return string
+     */
+    public function buildOOSForm(array $orderData, string $successUrl, string $errorUrl, string $type = 'sales'): string
+    {
+        $securityData = HashGenerator::generateSecurityData($this->config['prov_password'], $this->config['terminal_id']);
+        $hashData = HashGenerator::generate3DHash(
+            $this->config['terminal_id'], $orderData['order_id'], $orderData['amount'],
+            $successUrl, $errorUrl, $type, $orderData['installment'] ?? '',
+            $this->config['store_key'], $securityData
+        );
+
+        $endpoint = $this->config['mode'] === 'PROD'
+            ? 'https://sanalposprov.garanti.com.tr/servlet/gt3dengine'
+            : 'https://sanalposprovtest.garanti.com.tr/servlet/gt3dengine';
+
+        $formInputs = [
+            'mode' => $this->config['mode'],
+            'apiversion' => 'v0.01',
+            'terminalprovuserid' => $this->config['prov_oos_user_id'] ?? 'PROVOOS',
+            'terminaluserid' => $this->config['oos_user_id'] ?? 'oosuser',
+            'terminalmerchantid' => $this->config['merchant_id'],
+            'txntype' => $type,
+            'txnamount' => $orderData['amount'],
+            'txncurrencycode' => $this->config['currency'],
+            'txninstallmentcount' => $orderData['installment'] ?? '',
+            'orderid' => $orderData['order_id'],
+            'terminalid' => $this->config['terminal_id'],
+            'successurl' => $successUrl,
+            'errorurl' => $errorUrl,
+            'customeripaddress' => $orderData['ip_address'] ?? request()->ip(),
+            'customeremailaddress' => $orderData['email'] ?? '',
+            'secure3dsecuritylevel' => 'OOS_PAY',
+            'secure3dhash' => $hashData,
+        ];
+
+        $html = '<form id="garanti-oos-form" action="'.$endpoint.'" method="post">';
+        foreach ($formInputs as $key => $value) {
+            $html .= '<input type="hidden" name="'.$key.'" value="'.htmlspecialchars($value).'">';
+        }
+        $html .= '</form>';
+        $html .= '<script>document.getElementById("garanti-oos-form").submit();</script>';
+
+        return $html;
+    }
+
+    /**
      * Pay 3D Model Second Step (Otorizasyon)
      *
      * @param array $orderData
@@ -571,15 +706,20 @@ class GarantiPosService
      */
     public function pay3DModel(array $orderData, array $cardData, array $threeDResponse): array
     {
+        if (!HashGenerator::validate3DHash($threeDResponse, $this->config['store_key'])) {
+            throw new GarantiPosException('3D Secure Hash validation failed.');
+        }
+
         $securityData = HashGenerator::generateSecurityData(
             $this->config['prov_password'],
             $this->config['terminal_id']
         );
 
+        // Note: the Card Number must be empty here for the hash generation in step 2
         $hashData = HashGenerator::generateHashData(
             $orderData['order_id'],
             $this->config['terminal_id'],
-            $cardData['number'],
+            '',
             $orderData['amount'],
             $securityData
         );
@@ -599,9 +739,9 @@ class GarantiPosService
                 'EmailAddress' => $orderData['email'] ?? '',
             ],
             'Card' => [
-                'Number' => $cardData['number'],
-                'ExpireDate' => $cardData['expire_month'] . $cardData['expire_year'],
-                'CVV2' => $cardData['cvv'],
+                'Number' => '',
+                'ExpireDate' => '',
+                'CVV2' => '',
             ],
             'Order' => [
                 'OrderID' => $orderData['order_id'],
@@ -720,10 +860,10 @@ class GarantiPosService
         $formInputs = [
             'mode' => $this->config['mode'],
             'apiversion' => 'v0.01',
-            'terminalprovuserid' => $this->config['prov_user_id'],
-            'terminaluserid' => $this->config['prov_user_id'],
+            'terminalprovuserid' => $this->config['prov_oos_user_id'] ?? 'PROVOOS',
+            'terminaluserid' => $this->config['oos_user_id'] ?? 'oosuser',
             'terminalmerchantid' => $this->config['merchant_id'],
-            'txntype' => 'sales',
+            'txntype' => 'gpdatarequest',
             'txnamount' => $orderData['amount'],
             'txncurrencycode' => $this->config['currency'],
             'txninstallmentcount' => $orderData['installment'] ?? '',
@@ -733,8 +873,9 @@ class GarantiPosService
             'errorurl' => $errorUrl,
             'customeripaddress' => $orderData['ip_address'] ?? request()->ip(),
             'customeremailaddress' => $orderData['email'] ?? '',
-            'secure3dsecuritylevel' => '3D_PAY',
+            'secure3dsecuritylevel' => 'CUSTOM_PAY',
             'secure3dhash' => $hashData,
+            'txnsubtype' => 'sales',
             'garantipay' => 'Y',
         ];
 
@@ -1136,10 +1277,12 @@ class GarantiPosService
     /**
      * Order List Inquiry (Sipariş Listesi Sorgulama)
      *
+     * @param string|null $startDate (YYYYMMDD)
+     * @param string|null $endDate (YYYYMMDD)
      * @return array
      * @throws GarantiPosException
      */
-    public function orderListInquiry(): array
+    public function orderListInquiry(?string $startDate = null, ?string $endDate = null): array
     {
         $securityData = HashGenerator::generateSecurityData($this->config['prov_password'], $this->config['terminal_id']);
         $hashData = HashGenerator::generateHashData('', $this->config['terminal_id'], '', '1', $securityData);
@@ -1160,6 +1303,11 @@ class GarantiPosService
                 'CurrencyCode' => $this->config['currency'],
             ]
         ];
+
+        if ($startDate && $endDate) {
+            $payload['Transaction']['StartDate'] = $startDate;
+            $payload['Transaction']['EndDate'] = $endDate;
+        }
 
         return $this->sendRequest($payload);
     }

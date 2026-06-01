@@ -70,4 +70,15 @@ return [
     |
     */
     'currency' => env('GARANTI_POS_CURRENCY', '949'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | OOS & GarantiPay Users
+    |--------------------------------------------------------------------------
+    |
+    | Bank typically expects PROVOOS and oosuser for OOS/GarantiPay flows.
+    |
+    */
+    'prov_oos_user_id' => env('GARANTI_POS_PROV_OOS_USER_ID', 'PROVOOS'),
+    'oos_user_id' => env('GARANTI_POS_OOS_USER_ID', 'oosuser'),
 ];

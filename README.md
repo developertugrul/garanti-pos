@@ -28,6 +28,8 @@ GARANTI_POS_PROV_PASSWORD=Sifreniz
 GARANTI_POS_MERCHANT_ID=1234567
 GARANTI_POS_STORE_KEY=3DSecureAnahtari
 GARANTI_POS_CURRENCY=949 # 949: TL, 840: USD, 978: EUR
+GARANTI_POS_PROV_OOS_USER_ID=PROVOOS # OOS ve GarantiPay işlemleri için
+GARANTI_POS_OOS_USER_ID=oosuser
 ```
 
 ## Özellikler (Features)
@@ -37,15 +39,16 @@ GARANTI_POS_CURRENCY=949 # 949: TL, 840: USD, 978: EUR
 - **3D Model (2 Adımlı):** 3D doğrulamasının alındığı ve ardından arka planda otorizasyon yapılarak tahsilatın tamamlandığı sistem.
 - **İptal (Cancel):** Gün sonu alınmamış işlemlerin iptali.
 - **İade (Refund):** Gün sonu alınmış işlemlerin iadesi (Kısmi iade desteklenir).
-- **Ön Provizyon & Kapama (PreAuth / PostAuth):** Karttan provizyon (bloke) alma ve daha sonra bu tutarı tahsil etme.
+- **Ön Provizyon & Kapama (PreAuth / PostAuth):** Karttan provizyon (bloke) alma ve daha sonra bu tutarı tahsil etme (veya İptal etme).
 - **Puan İşlemleri:** Kredi kartındaki puanların sorgulanması ve tahsilat için kullanılması.
 - **Sipariş & Geçmiş Sorgulama:** İşlemlerin anlık banka durumlarının sorgulanması.
-- **GarantiPay:** Kullanıcıların mobil uygulama üzerinden ödeme yapabilmesi için form oluşturulması.
+- **GarantiPay:** Kullanıcıların mobil uygulama üzerinden ödeme yapabilmesi için form oluşturulması (PROVOOS uyumlu).
 - **CepBank:** CepBank uygulaması ile yapılan ödemelerin onaylanıp tahsil edilmesi.
 - **Tekrarlı Satış (Recurring):** Düzenli abonelik benzeri tahsilatlar.
 - **TCKN Doğrulama:** İşlem esnasında kimlik doğrulama.
+- **SMS & DCC Onayları:** Önceden alınmış onayların iletilmesi (`paySms` / `payDcc`).
 - **Tüketici Kredisi & Ticari Kart:** `extendedcredit` ve `commercialcardextendedcredit` gibi B2B, kredili, ötelemeli özel ödeme tipleri tam uyumlulukla desteklenir.
-- **DCC, Kampanya, Gün Sonu, Sipariş Listesi Sorguları:** Bankanın sunduğu tüm inquiry tipleri pakette mevcuttur.
+- **Güvenli 3D Doğrulaması:** 3D doğrulamasında bankadan dönen `hash` imzasının otomatik doğrulanması (PCI DSS uyumlu ve güvenli 2. adım).
 - **Tam Kapsam:** Dökümantasyonda geçen (BIN sorgulama dahil) **her bir** uç nokta desteklenmektedir.
 
 ## Dökümantasyon (Documentation)
@@ -72,6 +75,18 @@ $formHtml = GarantiPos::build3DForm(
 
 // Blade dosyanızda
 {!! $formHtml !!}
+```
+
+### 3D Hash Doğrulama (Güvenlik)
+
+3D işlemin dönüşünde bankadan gelen POST isteğini `pay3DModel` metoduna gönderdiğinizde **imza (hash) kontrolü otomatik** yapılır. Kendiniz kontrol etmek isterseniz:
+
+```php
+use Developertugrul\GarantiPos\Services\HashGenerator;
+
+if (!HashGenerator::validate3DHash($request->all(), config('garanti-pos.store_key'))) {
+    throw new \Exception("Güvenlik ihlali: 3D Hash uyuşmazlığı!");
+}
 ```
 
 ## Lisans
