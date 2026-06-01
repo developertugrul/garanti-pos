@@ -1,6 +1,8 @@
-# Garanti POS Laravel Package
+# Garanti BBVA Virtual POS Laravel Package
 
-A flawless, easy-to-use, and highly professional Laravel integration for Garanti BBVA Virtual POS API. Bu paket Garanti Bankası'nın sağladığı tüm Sanal POS (GVP) metodlarını eksiksiz olarak Laravel projelerinizde kullanmanızı sağlar.
+Garanti Bankası Sanal POS (GVP) altyapısı ile %100 uyumlu, modern ve kapsamlı Laravel paketi. Bu paket ile standart tahsilatlardan, 3D işlemlere, GarantiPay'den CepBank işlemlerine kadar Garanti Sanal POS'un sunduğu **tüm** özellikleri projenize entegre edebilirsiniz.
+
+📖 **Detaylı Çevrimiçi Dökümantasyon:** [https://developertugrul.github.io/garanti-pos/](https://developertugrul.github.io/garanti-pos/)
 
 ## Kurulum (Installation)
 
@@ -44,7 +46,13 @@ GARANTI_POS_CURRENCY=949 # 949: TL, 840: USD, 978: EUR
 - **Tam Kapsam:** Dökümantasyonda geçen (BIN sorgulama dahil) **her bir** uç nokta desteklenmektedir.
 
 ## Dökümantasyon (Documentation)
-Tüm metodlar, form yapıları, API istek ve yanıt detayları, HTML çıktıları vb. detaylı dökümantasyon için indirdiğiniz dizindeki `docs/index.html` dosyasına göz atın veya [buraya tıklayın](./docs/index.html). Dökümantasyon Bootstrap 5 ile tasarlanmış olup her bir özelliğin entegrasyonu mevcuttur.
+Tüm metodlar, form yapıları, API istek ve yanıt detayları, HTML çıktıları vb. detaylı dökümantasyon için **[Çevrimiçi Dökümantasyon (GitHub Pages)](https://developertugrul.github.io/garanti-pos/)** sayfasını ziyaret edebilir veya indirdiğiniz dizindeki `docs/index.html` dosyasına göz atabilirsiniz. Dökümantasyon Bootstrap 5 ile tasarlanmış olup her bir özelliğin entegrasyonu mevcuttur.
+
+## Geliştirici (Developer)
+Bu paket, e-ticaret projelerinde hızlı ve güvenilir sanal pos entegrasyonu sağlamak amacıyla geliştirilmiştir.
+
+- **Geliştirici:** Tuğrul Yıldırım
+- **Web Sitesi:** [https://tugrulyildirim.com](https://tugrulyildirim.com)
 
 ## Kullanım Örneği (3D Secure)
 
