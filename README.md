@@ -21,16 +21,36 @@ php artisan vendor:publish --provider="Developertugrul\GarantiPos\GarantiPosServ
 
 3. `.env` dosyanıza Garanti POS bilgilerinizi ekleyin:
 ```env
-GARANTI_POS_MODE=TEST # Canlı için PROD
+GARANTI_POS_MODE=TEST                  # Canlı için PROD
 GARANTI_POS_TERMINAL_ID=12345678
-GARANTI_POS_PROV_USER_ID=PROVAUT
-GARANTI_POS_PROV_PASSWORD=Sifreniz
 GARANTI_POS_MERCHANT_ID=1234567
 GARANTI_POS_STORE_KEY=3DSecureAnahtari
-GARANTI_POS_CURRENCY=949 # 949: TL, 840: USD, 978: EUR
-GARANTI_POS_PROV_OOS_USER_ID=PROVOOS # OOS ve GarantiPay işlemleri için
+GARANTI_POS_CURRENCY=949               # 949: TL, 840: USD, 978: EUR
+
+# Satış, preauth, sorgulama işlemleri için
+GARANTI_POS_PROV_USER_ID=PROVAUT
+GARANTI_POS_PROV_PASSWORD=Sifreniz
+
+# İptal (cancel) ve iade (refund) işlemleri için — boş bırakılırsa PROV_PASSWORD kullanılır
+GARANTI_POS_REFUND_USER_ID=PROVRFN
+GARANTI_POS_REFUND_PASSWORD=
+
+# OOS ödeme ve GarantiPay işlemleri için
+GARANTI_POS_PROV_OOS_USER_ID=PROVOOS
 GARANTI_POS_OOS_USER_ID=oosuser
 ```
+
+### Kullanıcı Rolleri (Prov User ID'leri)
+
+Garanti GVP sistemi işlem tipine göre farklı terminal kullanıcıları gerektirir. Paket bu ayrımı otomatik yönetir:
+
+| Env Değişkeni | Varsayılan | Kullanıldığı İşlemler |
+|---|---|---|
+| `GARANTI_POS_PROV_USER_ID` | `PROVAUT` | Satış, 3D, preauth, postauth, tüm sorgulama |
+| `GARANTI_POS_REFUND_USER_ID` | `PROVRFN` | İptal (`cancel`), iade (`refund`), tekrarlı iptal |
+| `GARANTI_POS_PROV_OOS_USER_ID` | `PROVOOS` | OOS ödeme, GarantiPay |
+
+> **Önemli:** `cancel()`, `refund()` ve `recurringCancel()` metodları otomatik olarak PROVRFN kullanıcısını ve `GARANTI_POS_REFUND_PASSWORD` şifresini kullanır. Çoğu kurulumda PROVRFN şifresi PROVAUT şifresiyle aynıdır; bu durumda `GARANTI_POS_REFUND_PASSWORD` boş bırakılabilir.
 
 ## Özellikler (Features)
 - **Normal Satış (Non-3D):** 3D secure kullanmadan ödeme alma (Banka izni gerektirir).

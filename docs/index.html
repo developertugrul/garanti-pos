@@ -77,13 +77,55 @@
                 <p>Ayar dosyasını dışa aktarın:</p>
                 <pre><code>php artisan vendor:publish --provider="Developertugrul\GarantiPos\GarantiPosServiceProvider"</code></pre>
                 <p><code>.env</code> dosyanıza bankadan aldığınız bilgileri ekleyin:</p>
-                <pre><code>GARANTI_POS_MODE=PROD # veya TEST
+                <pre><code>GARANTI_POS_MODE=PROD                  # veya TEST
 GARANTI_POS_TERMINAL_ID=12345678
-GARANTI_POS_PROV_USER_ID=PROVAUT
-GARANTI_POS_PROV_PASSWORD=Sifre123
 GARANTI_POS_MERCHANT_ID=1234567
 GARANTI_POS_STORE_KEY=3DSecureAnahtari
-GARANTI_POS_CURRENCY=949 # TL: 949, USD: 840, EUR: 978</code></pre>
+GARANTI_POS_CURRENCY=949               # TL: 949, USD: 840, EUR: 978
+
+# Satış, preauth, sorgulama işlemleri için
+GARANTI_POS_PROV_USER_ID=PROVAUT
+GARANTI_POS_PROV_PASSWORD=Sifre123
+
+# İptal ve iade işlemleri için (boş bırakılırsa PROV_PASSWORD kullanılır)
+GARANTI_POS_REFUND_USER_ID=PROVRFN
+GARANTI_POS_REFUND_PASSWORD=
+
+# OOS ödeme ve GarantiPay işlemleri için
+GARANTI_POS_PROV_OOS_USER_ID=PROVOOS
+GARANTI_POS_OOS_USER_ID=oosuser</code></pre>
+
+                <h5 class="mt-4">Kullanıcı Rolleri</h5>
+                <p>Garanti GVP sistemi işlem tipine göre farklı terminal kullanıcıları gerektirir. Paket bu ayrımı <strong>otomatik</strong> yönetir:</p>
+                <table class="table table-bordered table-sm">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Env Değişkeni</th>
+                            <th>Varsayılan</th>
+                            <th>Kullanıldığı İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>GARANTI_POS_PROV_USER_ID</code></td>
+                            <td><code>PROVAUT</code></td>
+                            <td>Satış, 3D, preauth, postauth, tüm sorgulama</td>
+                        </tr>
+                        <tr>
+                            <td><code>GARANTI_POS_REFUND_USER_ID</code></td>
+                            <td><code>PROVRFN</code></td>
+                            <td>İptal (<code>cancel</code>), iade (<code>refund</code>), tekrarlı iptal</td>
+                        </tr>
+                        <tr>
+                            <td><code>GARANTI_POS_PROV_OOS_USER_ID</code></td>
+                            <td><code>PROVOOS</code></td>
+                            <td>OOS ödeme, GarantiPay</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="alert alert-info">
+                    <strong>Not:</strong> <code>cancel()</code>, <code>refund()</code> ve <code>recurringCancel()</code> metodları otomatik olarak PROVRFN kullanıcısını kullanır. Çoğu kurulumda PROVRFN şifresi PROVAUT şifresiyle aynıdır; bu durumda <code>GARANTI_POS_REFUND_PASSWORD</code> boş bırakılabilir.
+                </div>
             </section>
 
             <!-- Satış -->

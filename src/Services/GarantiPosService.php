@@ -250,8 +250,17 @@ class GarantiPosService
      */
     private function processTransaction(string $type, string $orderId, string $amount, string $originalRetrefNum = ''): array
     {
+        $isRefundOp = in_array($type, ['cancel', 'refund', 'recurringvoid']);
+
+        $userId   = $isRefundOp
+            ? ($this->config['refund_user_id'] ?? 'PROVRFN')
+            : $this->config['prov_user_id'];
+        $password = $isRefundOp
+            ? ($this->config['refund_password'] ?? $this->config['prov_password'])
+            : $this->config['prov_password'];
+
         $securityData = HashGenerator::generateSecurityData(
-            $this->config['prov_password'],
+            $password,
             $this->config['terminal_id']
         );
 
@@ -267,9 +276,9 @@ class GarantiPosService
             'Mode' => $this->config['mode'],
             'Version' => 'v0.01',
             'Terminal' => [
-                'ProvUserID' => $this->config['prov_user_id'],
+                'ProvUserID' => $userId,
                 'HashData' => $hashData,
-                'UserID' => $this->config['prov_user_id'],
+                'UserID' => $userId,
                 'ID' => $this->config['terminal_id'],
                 'MerchantID' => $this->config['merchant_id'],
             ],
@@ -1136,8 +1145,11 @@ class GarantiPosService
      */
     public function recurringCancel(string $orderId): array
     {
+        $userId   = $this->config['refund_user_id'] ?? 'PROVRFN';
+        $password = $this->config['refund_password'] ?? $this->config['prov_password'];
+
         $securityData = HashGenerator::generateSecurityData(
-            $this->config['prov_password'],
+            $password,
             $this->config['terminal_id']
         );
 
@@ -1153,9 +1165,9 @@ class GarantiPosService
             'Mode' => $this->config['mode'],
             'Version' => 'v0.01',
             'Terminal' => [
-                'ProvUserID' => $this->config['prov_user_id'],
+                'ProvUserID' => $userId,
                 'HashData' => $hashData,
-                'UserID' => $this->config['prov_user_id'],
+                'UserID' => $userId,
                 'ID' => $this->config['terminal_id'],
                 'MerchantID' => $this->config['merchant_id'],
             ],
