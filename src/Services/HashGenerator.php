@@ -31,6 +31,7 @@ class HashGenerator
      */
     public static function generateHashData(string $orderId, string $terminalId, string $cardNumber, string $amount, string $securityData): string
     {
+        $amount = str_replace(['.', ','], '', $amount);
         return strtoupper(sha1($orderId . $terminalId . $cardNumber . $amount . $securityData));
     }
 
@@ -59,6 +60,7 @@ class HashGenerator
         string $storeKey,
         string $securityData
     ): string {
+        $amount     = str_replace(['.', ','], '', $amount);
         $hashString = $terminalId . $orderId . $amount . $successUrl . $errorUrl . $type . $installmentCnt . $storeKey . $securityData;
         return strtoupper(sha1($hashString));
     }
@@ -79,16 +81,12 @@ class HashGenerator
             return false;
         }
 
-        $digestData = "";
-        $paramList = explode(":", $responseHashparams);
+        $digestData    = "";
+        $postDataLower = array_change_key_case($postData, CASE_LOWER);
+        $paramList     = explode(":", $responseHashparams);
 
         foreach ($paramList as $param) {
-            $paramName = strtolower($param);
-            // In Garanti payload, keys are often lowercase but we check case insensitively if needed.
-            // Using array_change_key_case makes it safer.
-            $postDataLower = array_change_key_case($postData, CASE_LOWER);
-            $value = $postDataLower[$paramName] ?? '';
-            $digestData .= $value;
+            $digestData .= $postDataLower[strtolower($param)] ?? '';
         }
 
         $digestData .= $storeKey;
