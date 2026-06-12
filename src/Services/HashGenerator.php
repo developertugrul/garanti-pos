@@ -75,7 +75,9 @@ class HashGenerator
     public static function validate3DHash(array $postData, string $storeKey): bool
     {
         $responseHashparams = $postData['hashparams'] ?? '';
-        $responseHash = $postData['hash'] ?? '';
+        // Base64 contains '+' chars; application/x-www-form-urlencoded decodes '+' as space.
+        // Restore them so the comparison is not broken by Laravel/$_POST decoding.
+        $responseHash = str_replace(' ', '+', $postData['hash'] ?? '');
 
         if (empty($responseHashparams) || empty($responseHash)) {
             return false;
