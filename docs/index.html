@@ -10,31 +10,109 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
-        .sidebar { width: 260px; height: 100vh; position: fixed; background: #fff; padding-top: 2rem; padding-bottom: 2rem; box-shadow: 2px 0 5px rgba(0,0,0,0.05); overflow-y: auto; z-index: 1000; }
+
+        /* ── Desktop sidebar ── */
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #fff;
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+            overflow-y: auto;
+            z-index: 1000;
+        }
         .sidebar a { color: #333; display: block; padding: 8px 20px; text-decoration: none; font-weight: 500; font-size: 0.9rem; }
         .sidebar a:hover, .sidebar a.active { background: #008744; color: #fff; border-radius: 5px; margin: 0 10px; }
-        .main-content { margin-left: 260px; padding: 3rem; width: calc(100% - 260px); }
-        pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;}
+
+        /* ── Offcanvas sidebar (mobile) ── */
+        .offcanvas-nav a { color: #333; display: block; padding: 8px 16px; text-decoration: none; font-weight: 500; font-size: 0.9rem; border-radius: 5px; }
+        .offcanvas-nav a:hover { background: #008744; color: #fff; }
+
+        /* ── Mobile top bar ── */
+        .mobile-topbar {
+            display: none;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            background: #fff;
+            border-bottom: 1px solid #dee2e6;
+            padding: 0.6rem 1rem;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .mobile-topbar .brand { font-size: 1rem; font-weight: 700; color: #008744; }
+
+        /* ── Main content ── */
+        .main-content { margin-left: 260px; padding: 3rem; min-width: 0; }
+
+        /* ── Code & pre ── */
+        pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; white-space: pre; word-break: normal; }
+        .response-box { background: #2b3a42; color: #88c0d0; }
+
+        /* ── Misc ── */
         .brand-logo { font-size: 1.5rem; font-weight: 700; color: #008744; text-align: center; margin-bottom: 2rem; }
         h1, h2, h3 { color: #008744; margin-top: 2rem; }
         .alert-info { background-color: #e9f7ef; border-color: #d4edda; color: #155724; }
-        .response-box { background: #2b3a42; color: #88c0d0; }
-        @media (max-width: 768px) {
-            .sidebar { position: static; width: 100%; height: auto; padding: 1rem; }
-            .main-content { margin-left: 0; padding: 1.5rem; width: 100%; }
-        }
-        @media (min-width: 769px) {
-            .container-fluid > .row { display: flex; flex-wrap: nowrap; }
-            .main-content { margin-left: 260px; padding: 3rem; flex: 1; max-width: calc(100% - 260px); }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+        /* ── Responsive ── */
+        @media (max-width: 767.98px) {
+            .sidebar { display: none; }
+            .mobile-topbar { display: flex; }
+            .main-content { margin-left: 0; padding: 1.25rem; }
+            pre { font-size: 0.78rem; }
+            h1.display-4 { font-size: 1.75rem; }
         }
     </style>
 </head>
 <body>
 
+<!-- Mobile top bar -->
+<div class="mobile-topbar">
+    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
+        <i class="fa fa-bars"></i>
+    </button>
+    <span class="brand"><i class="fa-brands fa-laravel"></i> Garanti POS</span>
+</div>
+
+<!-- Offcanvas sidebar (mobile) -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+    <div class="offcanvas-header border-bottom">
+        <h6 class="offcanvas-title fw-bold text-success" id="sidebarOffcanvasLabel"><i class="fa-brands fa-laravel"></i> Garanti POS</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Kapat"></button>
+    </div>
+    <div class="offcanvas-body p-2 offcanvas-nav">
+        <a href="#kurulum"              data-bs-dismiss="offcanvas">1. Kurulum</a>
+        <a href="#yapilandirma"         data-bs-dismiss="offcanvas">2. Yapılandırma</a>
+        <a href="#satis-3d-siz"         data-bs-dismiss="offcanvas">3. Satış (Non-3D)</a>
+        <a href="#satis-3d"             data-bs-dismiss="offcanvas">4. Satış (3D Pay)</a>
+        <a href="#satis-3d-oos"         data-bs-dismiss="offcanvas">5. Satış (3D OOS Pay)</a>
+        <a href="#satis-3d-model"       data-bs-dismiss="offcanvas">6. Satış (3D Model)</a>
+        <a href="#iptal"                data-bs-dismiss="offcanvas">7. İptal İşlemi</a>
+        <a href="#iade"                 data-bs-dismiss="offcanvas">8. İade İşlemi</a>
+        <a href="#on-provizyon"         data-bs-dismiss="offcanvas">9. Ön Provizyon</a>
+        <a href="#on-provizyon-kapama"  data-bs-dismiss="offcanvas">10. Ön Provizyon Kapama</a>
+        <a href="#puan-sorgulama"       data-bs-dismiss="offcanvas">11. Puan Sorgulama</a>
+        <a href="#puan-kullanimi"       data-bs-dismiss="offcanvas">12. Puan Kullanımı</a>
+        <a href="#siparis-sorgulama"    data-bs-dismiss="offcanvas">13. Sipariş Sorgulama</a>
+        <a href="#satis-garantipay"     data-bs-dismiss="offcanvas">14. GarantiPay</a>
+        <a href="#satis-cepbank"        data-bs-dismiss="offcanvas">15. CepBank</a>
+        <a href="#islem-detay-sorgulama" data-bs-dismiss="offcanvas">16. İşlem Detay</a>
+        <a href="#tekrarlayan-satis"    data-bs-dismiss="offcanvas">17. Tekrarlayan Satış</a>
+        <a href="#tckn-dogrulama"       data-bs-dismiss="offcanvas">18. TCKN Doğrulama</a>
+        <a href="#kredi-islemleri"      data-bs-dismiss="offcanvas">19. Kredili Satışlar</a>
+        <a href="#diger-uclar"          data-bs-dismiss="offcanvas">20. Diğer Uç Noktalar</a>
+    </div>
+</div>
+
 <div class="container-fluid">
     <div class="row">
-        <!-- Sidebar -->
-        <div class="sidebar d-none d-md-block">
+        <!-- Desktop Sidebar -->
+        <div class="sidebar">
             <div class="brand-logo"><i class="fa-brands fa-laravel"></i> Garanti POS</div>
             <a href="#kurulum" class="active">1. Kurulum</a>
             <a href="#yapilandirma">2. Yapılandırma</a>
@@ -54,7 +132,7 @@
             <a href="#islem-detay-sorgulama">16. İşlem Detay Sorgulama</a>
             <a href="#tekrarlayan-satis">17. Tekrarlayan Satış (Recurring)</a>
             <a href="#tckn-dogrulama">18. TCKN Doğrulama</a>
-            <a href="#kredili-satis">19. Kredili Satışlar</a>
+            <a href="#kredi-islemleri">19. Kredili Satışlar</a>
             <a href="#diger-uclar">20. Diğer B2B Uç Noktalar</a>
         </div>
 
@@ -97,6 +175,7 @@ GARANTI_POS_OOS_USER_ID=oosuser</code></pre>
 
                 <h5 class="mt-4">Kullanıcı Rolleri</h5>
                 <p>Garanti GVP sistemi işlem tipine göre farklı terminal kullanıcıları gerektirir. Paket bu ayrımı <strong>otomatik</strong> yönetir:</p>
+                <div class="table-responsive">
                 <table class="table table-bordered table-sm">
                     <thead class="table-dark">
                         <tr>
@@ -123,6 +202,7 @@ GARANTI_POS_OOS_USER_ID=oosuser</code></pre>
                         </tr>
                     </tbody>
                 </table>
+                </div>
                 <div class="alert alert-info">
                     <strong>Not:</strong> <code>cancel()</code>, <code>refund()</code> ve <code>recurringCancel()</code> metodları otomatik olarak PROVRFN kullanıcısını kullanır. Çoğu kurulumda PROVRFN şifresi PROVAUT şifresiyle aynıdır; bu durumda <code>GARANTI_POS_REFUND_PASSWORD</code> boş bırakılabilir.
                 </div>
