@@ -3,9 +3,10 @@
 Garanti BBVA GVP sanal POS entegrasyonu için Laravel uyumlu composer paketi. Paket, repo içindeki resmi `Help/GVP` örneklerine göre XML, 3D form, OOS, GarantiPay, puan, DCC, SMS, ekstre doğrulama, TCKN, CepBank, utility/GSM/MoneyCard, recurring ve sorgu akışlarını üretir.
 
 **Author:** [https://tugrulyildirim.com](https://tugrulyildirim.com/)
+**Documentation:** [https://developertugrul.github.io/garanti-pos/](https://developertugrul.github.io/garanti-pos/)
 
 ## Kurulum
-
+    
 ```bash
 composer require developertugrul/garanti-pos
 php artisan vendor:publish --provider="Developertugrul\GarantiPos\GarantiPosServiceProvider"
