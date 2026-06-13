@@ -21,9 +21,17 @@
         "illuminate/support": "^9.0|^10.0|^11.0|^12.0|^13.0",
         "illuminate/http": "^9.0|^10.0|^11.0|^12.0|^13.0"
     },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    },
     "autoload": {
         "psr-4": {
             "Developertugrul\\GarantiPos\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Developertugrul\\GarantiPos\\Tests\\": "tests/"
         }
     },
     "extra": {
@@ -38,5 +46,5 @@
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
-    "version": "1.0.15"
+    "version": "1.0.16"
 }
